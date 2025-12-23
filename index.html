@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>PM Surya Ghar: Solar Size + Subsidy Calculator</title>
+
+  <!-- ✅ After AdSense approval, you will paste your AdSense script here (example shown at bottom). -->
+
+  <style>
+    :root { --bg:#f6f7fb; --card:#fff; --text:#111; --muted:#666; --bd:#e6e8ef; --btn:#111; --btn2:#fff; }
+    body { margin:0; font-family: Arial, Helvetica, sans-serif; background:var(--bg); color:var(--text); }
+    .wrap { max-width: 1020px; margin: 24px auto; padding: 0 16px; }
+    h1 { margin: 0 0 8px; font-size: 22px; }
+    .sub { margin: 0 0 18px; color: var(--muted); line-height:1.4; }
+    .grid { display:grid; grid-template-columns: 1fr; gap: 14px; }
+    @media (min-width: 900px){ .grid{ grid-template-columns: 1.15fr 0.85fr; } }
+
+    .card { background:var(--card); border:1px solid var(--bd); border-radius:14px; padding:16px; box-shadow:0 6px 18px rgba(0,0,0,.06); }
+    .row { display:grid; grid-template-columns: 1fr; gap: 10px; }
+    @media (min-width: 560px){ .row{ grid-template-columns: 1fr 1fr; } }
+
+    label { display:block; font-weight:700; margin: 10px 0 6px; }
+    input, select {
+      width:100%; box-sizing:border-box; padding:10px 12px; border-radius:10px;
+      border:1px solid var(--bd); outline:none; font-size:14px; background:#fff;
+    }
+    input:focus, select:focus { border-color:#b8c0ff; box-shadow:0 0 0 3px rgba(102,120,255,.15); }
+    input[readonly]{ background:#f3f5fb; }
+
+    .hint { font-size: 12px; color: var(--muted); margin-top: 6px; line-height:1.35; }
+    .btns { display:flex; gap:10px; margin-top:14px; flex-wrap:wrap; }
+    button { border:0; border-radius: 12px; padding: 10px 14px; cursor:pointer; font-weight:700; background: var(--btn); color: var(--btn2); }
+    button.secondary { background:#fff; color:#111; border:1px solid var(--bd); }
+
+    .kpi { display:grid; grid-template-columns: 1fr; gap:10px; margin-top: 12px; }
+    @media (min-width: 560px){ .kpi{ grid-template-columns: 1fr 1fr; } }
+    .kpi .box { border:1px dashed var(--bd); border-radius:12px; padding:12px; }
+    .kpi .big { font-size: 18px; font-weight: 800; margin-top: 6px; }
+
+    .muted { color:var(--muted); font-size:12px; }
+    .warn { background:#fff7e6; border:1px solid #ffe1a3; padding:10px 12px; border-radius:12px; color:#6a4b00; font-size:13px; line-height:1.35; }
+    .ok { background:#effaf1; border:1px solid #b9e7c0; padding:10px 12px; border-radius:12px; color:#1f5a2a; font-size:13px; line-height:1.35; }
+    .rules { font-size: 13px; color:#222; line-height: 1.5; }
+    .rules code { background:#f1f3f9; padding:2px 6px; border-radius:8px; }
+    .pill { display:inline-block; padding:2px 8px; border:1px solid var(--bd); border-radius:999px; font-size:12px; color:#333; background:#fff; }
+    .adbox { border:1px dashed var(--bd); border-radius:12px; padding:12px; text-align:center; color:#555; font-size:12px; }
+    .split { display:grid; grid-template-columns: 1fr; gap:10px; }
+    @media (min-width: 560px){ .split{ grid-template-columns: 1fr 1fr 1fr 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>PM Surya Ghar: Solar Size + Subsidy Calculator</h1>
+    <p class="sub">
+      Choose your state to auto-fill a <span class="pill">default tariff</span>. For best accuracy, use <b>Units (kWh)</b> from your bill.
+      Subsidy depends on system size (kW). :contentReference[oaicite:2]{index=2}
+    </p>
+
+    <!-- Optional Ad placeholder (you can remove it) -->
+    <div class="adbox" style="margin-bottom:14px;">
+      Banner Ad Space (Google AdSense will appear here after approval)
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h2 style="margin:0 0 6px; font-size:16px;">Inputs</h2>
+
+        <div class="row">
+          <div>
+            <label>State (for default tariff)</label>
+            <select id="state"></select>
+            <div class="hint">Tariffs are slab-wise & DISCOM-specific; this is only a starting point.</div>
+          </div>
+          <div>
+            <label>Average tariff (₹ per unit)</label>
+            <input id="tariff" type="number" min="1" step="0.1" />
+            <div class="hint">Auto-updates from state; you can edit it based on your bill.</div>
+          </div>
+        </div>
+
+        <label>Input mode</label>
+        <select id="mode">
+          <option value="bill" selected>Use Monthly Bill (₹) - 1/2/3 bills</option>
+          <option value="units">Use Monthly Units (kWh)</option>
+        </select>
+
+        <!-- BILL MODE -->
+        <div id="billBlock">
+          <label>Monthly Electricity Bills (₹)</label>
+
+          <div class="split">
+            <input id="bill1" type="number" min="0" step="1" placeholder="Bill Month 1 (₹)" />
+            <input id="bill2" type="number" min="0" step="1" placeholder="Bill Month 2 (₹)" />
+            <input id="bill3" type="number" min="0" step="1" placeholder="Bill Month 3 (₹)" />
+            <input id="avgBill" type="number" placeholder="Average (auto)" readonly />
+          </div>
+
+          <div class="hint">Enter 1, 2, or 3 bills. The calculator uses the average.</div>
+        </div>
+
+        <!-- UNITS MODE -->
+        <div id="unitsBlock" style="display:none;">
+          <label>Monthly Electricity Units (kWh / units)</label>
+          <input id="unitsInput" type="number" min="0" step="1" placeholder="e.g., 350" />
+          <div class="hint">This is the most accurate method (direct from your bill).</div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>Monthly generation per 1 kW (units)</label>
+            <input id="genPerKw" type="number" min="60" step="1" value="120" />
+            <div class="hint">Default 120 units/month per 1 kW (approx).</div>
+          </div>
+          <div>
+            <label>Panel wattage (W)</label>
+            <input id="panelW" type="number" min="100" step="10" value="550" />
+            <div class="hint">For panel count estimate (e.g., 540W/550W).</div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>Target offset</label>
+            <select id="offset">
+              <option value="0.8">80% of usage</option>
+              <option value="0.9">90% of usage</option>
+              <option value="1.0" selected>100% of usage</option>
+            </select>
+            <div class="hint">Choose less than 100% if you want a smaller system.</div>
+          </div>
+          <div>
+            <label>Round system size to</label>
+            <select id="roundTo">
+              <option value="0.5" selected>Nearest 0.5 kW</option>
+              <option value="0.25">Nearest 0.25 kW</option>
+              <option value="0.1">Nearest 0.1 kW</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>Auto-calc</label>
+            <select id="auto">
+              <option value="yes" selected>On (recalculate while typing)</option>
+              <option value="no">Off</option>
+            </select>
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <div class="muted">Subsidy logic: ₹30,000/kW up to 2kW; ₹18,000/kW for 2–3kW; max ₹78,000. :contentReference[oaicite:3]{index=3}</div>
+          </div>
+        </div>
+
+        <div class="btns">
+          <button onclick="calculate()">Calculate</button>
+          <button class="secondary" onclick="resetForm()">Reset</button>
+        </div>
+
+        <div id="msg" style="margin-top:10px;"></div>
+      </div>
+
+      <div class="card">
+        <h2 style="margin:0 0 6px; font-size:16px;">Results</h2>
+
+        <div class="kpi">
+          <div class="box">
+            <div class="muted">Estimated Monthly Units</div>
+            <div class="big" id="unitsOut">—</div>
+            <div class="muted">kWh / units</div>
+          </div>
+          <div class="box">
+            <div class="muted">Recommended System Size</div>
+            <div class="big" id="kwOut">—</div>
+            <div class="muted">kW (≈ <span id="wOut">—</span> W)</div>
+          </div>
+          <div class="box">
+            <div class="muted">Estimated Panels Needed</div>
+            <div class="big" id="panelsOut">—</div>
+            <div class="muted">based on panel wattage</div>
+          </div>
+          <div class="box">
+            <div class="muted">PM Surya Ghar Subsidy</div>
+            <div class="big" id="subsidyOut">—</div>
+            <div class="muted">₹ (cap ₹78,000)</div>
+          </div>
+        </div>
+
+        <div style="margin-top:12px;" class="warn">
+          Note: This is an estimate. Final sizing depends on roof shading, orientation, sanctioned load, and DISCOM rules.
+        </div>
+
+        <!-- Optional Ad placeholder -->
+        <div class="adbox" style="margin-top:12px;">
+          Another Ad Space
+        </div>
+
+        <div style="margin-top:12px;" class="rules">
+          <b>Tip:</b> If your bill shows “Units Consumed”, switch to <code>Units</code> mode for best accuracy.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Rough default tariffs (editable). Real tariffs are slab/DISCOM based.
+    const STATE_TARIFFS = {
+      "Select State (default 8)": 8,
+      "Andhra Pradesh": 7.5,
+      "Assam": 7.0,
+      "Bihar": 7.5,
+      "Chhattisgarh": 7.0,
+      "Delhi": 8.0,
+      "Goa": 6.0,
+      "Gujarat": 6.5,
+      "Haryana": 7.0,
+      "Himachal Pradesh": 6.0,
+      "Jharkhand": 7.5,
+      "Karnataka": 7.5,
+      "Kerala": 7.5,
+      "Madhya Pradesh": 7.0,
+      "Maharashtra": 8.0,
+      "Odisha": 6.5,
+      "Punjab": 7.0,
+      "Rajasthan": 7.5,
+      "Tamil Nadu": 7.0,
+      "Telangana": 7.5,
+      "Uttar Pradesh": 7.5,
+      "Uttarakhand": 6.5,
+      "West Bengal": 7.0
+    };
+
+    const el = (id) => document.getElementById(id);
+
+    function inr(n){
+      if (!isFinite(n)) return "—";
+      return "₹" + Math.round(n).toLocaleString("en-IN");
+    }
+
+    function roundToStep(val, step){
+      return Math.round(val / step) * step;
+    }
+
+    function subsidyForKw(kw){
+      let s = 0;
+      if (kw <= 0) return 0;
+      const first = Math.min(kw, 2);
+      s += first * 30000;
+      if (kw > 2) {
+        const second = Math.min(kw - 2, 1); // 2 to 3
+        s += second * 18000;
+      }
+      return Math.min(s, 78000);
+    }
+
+    function clearOutputs(){
+      el("unitsOut").textContent = "—";
+      el("kwOut").textContent = "—";
+      el("wOut").textContent = "—";
+      el("panelsOut").textContent = "—";
+      el("subsidyOut").textContent = "—";
+    }
+
+    function populateStates(){
+      const stateSel = el("state");
+      stateSel.innerHTML = "";
+      Object.keys(STATE_TARIFFS).forEach((name) => {
+        const opt = document.createElement("option");
+        opt.value = name;
+        opt.textContent = `${name} (₹${STATE_TARIFFS[name]}/unit)`;
+        stateSel.appendChild(opt);
+      });
+      stateSel.value = "Select State (default 8)";
+      el("tariff").value = STATE_TARIFFS[stateSel.value]; // force set on load
+    }
+
+    function calculateAverageBill(){
+      const bills = [
+        parseFloat(el("bill1").value || 0),
+        parseFloat(el("bill2").value || 0),
+        parseFloat(el("bill3").value || 0)
+      ].filter(v => v > 0);
+
+      if (bills.length === 0) {
+        el("avgBill").value = "";
+        return 0;
+      }
+      const avg = bills.reduce((a,b)=>a+b,0) / bills.length;
+      el("avgBill").value = Math.round(avg);
+      return avg;
+    }
+
+    function getMonthlyUnits(){
+      const mode = el("mode").value;
+      const tariff = parseFloat(el("tariff").value || "0");
+
+      if (mode === "units") {
+        return parseFloat(el("unitsInput").value || "0");
+      }
+
+      // bill mode
+      const avgBill = calculateAverageBill();
+      if (avgBill <= 0) return 0;
+      if (tariff <= 0) return 0;
+      return avgBill / tariff;
+    }
+
+    function calculate(){
+      const mode = el("mode").value;
+      const tariff = parseFloat(el("tariff").value || "0");
+      const genPerKw = parseFloat(el("genPerKw").value || "120");
+      const panelW = parseFloat(el("panelW").value || "550");
+      const offset = parseFloat(el("offset").value || "1");
+      const roundTo = parseFloat(el("roundTo").value || "0.5");
+      const msg = el("msg");
+      msg.innerHTML = "";
+
+      if (genPerKw <= 0 || panelW <= 0) {
+        msg.innerHTML = "<div class='warn'>Generation per kW and panel wattage must be > 0.</div>";
+        clearOutputs();
+        return;
+      }
+
+      if (mode === "bill" && tariff <= 0) {
+        msg.innerHTML = "<div class='warn'>Tariff must be > 0 for Bill mode.</div>";
+        clearOutputs();
+        return;
+      }
+
+      const units = getMonthlyUnits();
+      if (units <= 0) {
+        msg.innerHTML = "<div class='warn'>Please enter your bills (or units) to calculate.</div>";
+        clearOutputs();
+        return;
+      }
+
+      const targetUnits = units * offset;
+      let kw = targetUnits / genPerKw;
+      kw = roundToStep(kw, roundTo);
+      if (kw < roundTo) kw = roundTo;
+
+      const watts = kw * 1000;
+      const panels = Math.ceil(watts / panelW);
+      const subsidy = subsidyForKw(kw);
+
+      el("unitsOut").textContent = Math.round(units).toLocaleString("en-IN");
+      el("kwOut").textContent = kw.toFixed(2);
+      el("wOut").textContent = Math.round(watts).toLocaleString("en-IN");
+      el("panelsOut").textContent = panels.toLocaleString("en-IN");
+      el("subsidyOut").textContent = inr(subsidy);
+
+      msg.innerHTML = "<div class='ok'>Calculated successfully ✅</div>";
+    }
+
+    function maybeAutoCalc(){
+      if (el("auto").value === "yes") calculate();
+    }
+
+    function onModeChange(){
+      const mode = el("mode").value;
+      el("billBlock").style.display = (mode === "bill") ? "block" : "none";
+      el("unitsBlock").style.display = (mode === "units") ? "block" : "none";
+      maybeAutoCalc();
+    }
+
+    function resetForm(){
+      el("state").value = "Select State (default 8)";
+      el("tariff").value = STATE_TARIFFS[el("state").value];
+
+      el("mode").value = "bill";
+      el("bill1").value = "";
+      el("bill2").value = "";
+      el("bill3").value = "";
+      el("avgBill").value = "";
+      el("unitsInput").value = "";
+
+      el("genPerKw").value = "120";
+      el("panelW").value = "550";
+      el("offset").value = "1.0";
+      el("roundTo").value = "0.5";
+      el("auto").value = "yes";
+
+      el("msg").innerHTML = "";
+      clearOutputs();
+      onModeChange();
+    }
+
+    // Init
+    populateStates();
+    onModeChange();
+
+    // Events
+    el("state").addEventListener("change", () => {
+      const t = STATE_TARIFFS[el("state").value];
+      el("tariff").value = t;                 // force overwrite
+      el("tariff").dispatchEvent(new Event("input")); // trigger auto-calc
+    });
+
+    el("mode").addEventListener("change", onModeChange);
+
+    ["tariff","genPerKw","panelW","offset","roundTo","unitsInput"].forEach(id => {
+      el(id).addEventListener("input", maybeAutoCalc);
+      el(id).addEventListener("change", maybeAutoCalc);
+    });
+
+    ["bill1","bill2","bill3"].forEach(id => {
+      el(id).addEventListener("input", () => {
+        calculateAverageBill();
+        maybeAutoCalc();
+      });
+      el(id).addEventListener("change", () => {
+        calculateAverageBill();
+        maybeAutoCalc();
+      });
+    });
+  </script>
+
+  <!--
+  ✅ Example AdSense code (you will get this from your AdSense account after approval):
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX"
+          crossorigin="anonymous"></script>
+
+  Then where you want the banner:
+  <ins class="adsbygoogle"
+       style="display:block"
+       data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+       data-ad-slot="1234567890"
+       data-ad-format="auto"
+       data-full-width-responsive="true"></ins>
+  <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+  -->
+</body>
+</html>
